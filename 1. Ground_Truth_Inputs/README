@@ -1,3 +1,3 @@
 # These are all of the input files that we can treat as 'ground truth'
 # We will not edit anything within these files; these contain the parameters and constants that define the physics and chemistry of our system to allow us to run our molecular dynamics simulation
-# These files essentially are what 'define' our interatomic potential
+# These files essentially define our interatomic potential; if you want to know more, please let me know! It is not important for the context of the project, but I'd be happy to :)
