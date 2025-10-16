@@ -1,0 +1,3 @@
+# These are all of the input files that we can treat as 'ground truth'
+# We will not edit anything within these files; these contain the parameters and constants that define the physics and chemistry of our system
+# These files essentially are what 'define' our interatomic potential
