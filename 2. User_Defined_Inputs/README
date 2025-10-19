@@ -3,4 +3,7 @@
 ## in.run ##
   # I will type additional notes within the in.run file to help with understanding; feel free to ask any questions! 
   # The software I use to run molecular dynamics is called LAMMPS (Large-scale Atomic/Molecular Massively Parallel Simulator)
-  # in.run is the LAMMPS input file, which defines our system, what we want to do to the system, and what thermodynamic data we want to record from our simulation
+  # in.run is the LAMMPS input file, which defines our system, what we want to simulate, and what thermodynamic data we want to record from our simulation
+  # This file is where we will call on the files in our 'ground truth inputs'
+
+## lmp.slurm ##
