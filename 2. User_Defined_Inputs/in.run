@@ -1,70 +1,60 @@
-#INITIALIZATION#
+#INITIALIZATION; NO CHANGES EXCEPT TEMP#
 
-variable temp equal 4000.0
+variable temp equal 2000.0
 
-units           real
-dimension       3
-boundary        p p p
-atom_style      charge
+units             real
+dimension         3
+boundary          p p p
+atom_style        charge
 
-pair_style      reaxff lmp_control
+pair_style        reaxff lmp_control
 
-#SYSTEM DEFINITIONS#
+#SYSTEM DEFINITIONS; NO CHANGES#
 
-read_data       data.CHO
-replicate       3 3 3
+read_data         data.CHO
+replicate         3 3 3
 displace_atoms 	all random 0.5 0.5 0.5 12345
 
-#SIMULATION SETTINGS#
+#SIMULATION SETTINGS NO CHANGE#
 
-pair_coeff      * * ffield.reax.cho H C O
-
-
-fix             1 all qeq/reax 1 0.0 10.0 1.0e-3 param.qeq 
-#Fix before minimize as it influences minimization; also must come before any computes calling on atomic charges
-
+pair_coeff        * * ffield.reax.cho H C O
+fix               1 all qeq/reax 1 0.0 10.0 1.0e-3 param.qeq 
 group 		hydrogen	type 1
 group 		carbon		type 2
 group 		oxygen		type 3
 
-compute         charge all property/atom q #Per-atom vector of charges for all atoms
-compute         qsum all reduce sum c_charge    #Total system charge 
+compute           charge all property/atom q #Per-atom vector of charges for all atoms
+compute           qsum all reduce sum c_charge    #Total system charge 
 
 compute		q1avg hydrogen reduce ave c_charge #Average charge of hydrogen atoms
-compute 	q2avg carbon reduce ave c_charge #Avergae charge of carbon atoms
+compute 	         q2avg carbon reduce ave c_charge #Avergae charge of carbon atoms
 compute		q3avg oxygen reduce ave c_charge #Avergae charge of oxygen atoms
 
 variable 	eatom equal etotal/atoms
 
-thermo_style    custom step temp pe ke etotal v_eatom press vol c_q1avg c_q2avg c_q3avg c_qsum
-neighbor	2.0 bin 
-#1.0 is the skin, the extra distnace beyond force cuttoff, usually 10-20% of force cuttof 
-#bin is the style is default; efficient and linear scaling with system size for general md
-neigh_modify 	delay 0 every 1 check yes 
-#Check every timestep to track atomic motion and build as soon as necessary; when atoms move a new neighbor may come within cuttoff and if lammps does not notice it results in you using an outdated neigjbor list leading to missed interactions
-#neigh_modify alerts you to potentially missing interactipons which can be corrected by increasing skin distance
+thermo_style      custom step temp pe ke etotal v_eatom press vol c_q1avg c_q2avg c_q3avg c_qsum
+neighbor	         2.0 bin 
 
+min_style         sd
+minimize	         0 1e-2 20000 100000
 
-min_style       sd
-minimize	0 1e-2 20000 100000
-#minimize etot ftot maxiter maxeval; etot = how little is the energy changing per step, ftot = how small are the residual forces, maxiter = how many moves the minimizer is allowed to try (number of decisions about a new downhill direction) , maxeval = how many times lammps is allowed to calculate energy and forces during minimization (all the trial steps along those directions)
+min_style         fire
+minimize	         0 1e-4 20000 100000
 
-min_style       fire
-minimize	0 1e-4 20000 100000
+velocity	         all create ${temp} 4928459 loop geom rot yes
 
-velocity	all create ${temp} 4928459 loop geom rot yes
-
-fix             2 all nve #Conduct after minimize in order to remove any initial high-energy configs
+fix               2 all nve #Conduct after minimizing to remove any initial high-energy configs
 
 
 
 #RUN SIMULATION#
-
+# The ramp rate is affected (T_end − T_start) / (nsteps × dt)
+# We can fix dt, but adjust nsteps
 dump		1 all custom 1 dump.xyz id type x y z q
 dump_modify 	1 element H C O
 
-thermo          10 
+thermo            10 #Every 10 timesteops, the software will print out thermodynamic data; we will see this in our logfile
          
-timestep        0.10
+timestep          0.10 #femtoseconds
          
-run             1000
+run               1000
