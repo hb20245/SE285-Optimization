@@ -23,11 +23,6 @@ variable        ramp_steps equal ceil(${ramp_ps}/${dt_ps})
 print "Heating rate target = ${Rate_Kps} K/ps"
 print "Ramp dT = ${dT} K ; dt = ${dt_fs} fs ; ramp_steps = ${ramp_steps}"
 
-# ---------------------- FORCE FIELD ----------------------
-pair_style      reaxff lmp_control
-pair_coeff      * * ffield.reax.cho H C O
-fix             1 all qeq/reax 1 0.0 10.0 1.0e-6 param.qeq   # charge equilibration (tight)
-
 # ---------------------- SYSTEM ----------------------
 read_data       data.CHO
 replicate       3 3 3
@@ -36,6 +31,10 @@ displace_atoms  all random 0.5 0.5 0.5 12345
 group           hydrogen type 1
 group           carbon   type 2
 group           oxygen   type 3
+# ---------------------- FORCE FIELD ----------------------
+pair_style      reaxff lmp_control
+pair_coeff      * * ffield.reax.cho H C O
+fix             1 all qeq/reax 1 0.0 10.0 1.0e-6 param.qeq   # charge equilibration (tight)
 
 # Basic thermo
 variable        eatom equal etotal/atoms
@@ -60,6 +59,10 @@ fix             eq all npt temp ${Tstart} ${Tstart} ${Tdamp_fs} iso 1.0 1.0 ${Pd
 run             100000           # ~10 ps with dt=0.10 fs (increase later if needed)
 unfix           eq
 
+# ---------------------- OUTPUTS ----------------------
+dump            xyz all custom 1000 dump.xyz id type x y z q
+dump_modify     xyz element H C O
+
 # ReaxFF bonds/species for sp2 post-processing (bond order threshold 0.3)
 fix             sp all reaxff/species 20 25 500 species.out
 fix             bnd all reaxff/bonds 100 bonds.reax
@@ -68,11 +71,6 @@ fix             bnd all reaxff/bonds 100 bonds.reax
 fix             ramp all nvt temp ${Tstart} ${Tend} ${Tdamp_fs}
 run             ${ramp_steps}
 unfix           ramp
-
-# ---------------------- OUTPUTS ----------------------
-dump            xyz all custom 1000 dump.xyz id type x y z q
-dump_modify     xyz element H C O
-
 print "DONE: Rate=${Rate_Kps} K/ps ; ramp_steps=${ramp_steps}"
 
 
