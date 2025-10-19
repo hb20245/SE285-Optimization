@@ -10,9 +10,9 @@ timestep        ${dt_fs}
 # ---- User knobs (optimize the heating rate) ----
 variable        Tstart     equal 300.0         # K
 variable        Tend       equal 1500.0        # K
-variable        Tdamp_fs   equal 100.0         # fs (keep fixed)
+variable        Tdamp_fs   equal 100.0         # fs 
 variable        Pdamp_fs   equal 8000.0        # fs (~8 ps; smoother NPT)
-variable        Rate_Kps   equal 10.0          # K/ps  <-- CHANGE per run for your optimization
+variable        Rate_Kps   equal 10.0          # K/ps  <-- CHANGE per run
 
 # Derived: dT, dt in ps, ramp time and steps
 variable        dT         equal ${Tend}-${Tstart}
