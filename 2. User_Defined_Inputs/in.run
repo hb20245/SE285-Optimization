@@ -70,8 +70,8 @@ dump            xyz all custom 1000 dump.xyz id type x y z q
 dump_modify     xyz element H C O
 
 # ReaxFF bonds/species for sp2 post-processing (bond order threshold 0.3)
-fix             sp  all reaxff/species 100 species.out
-fix             bnd all reaxff/bonds   100 bonds.reax 0.3
+fix             sp all reaxff/species 20 25 500 species.out
+fix             bnd all reaxff/bonds 100 bonds.reax
 
 print "DONE: Rate=${Rate_Kps} K/ps ; ramp_steps=${ramp_steps}"
 
