@@ -7,3 +7,8 @@
   # This file is where we will call on the files in our 'ground truth inputs'
 
 ## lmp.slurm ##
+  # The supercomputer I use to run my simulations utilizes the Slurm system
+  # To run a simulation, or any other calculations on the supercomputer, we have to write a Slurm script and submit it to the supercomputer
+  # All the flags at the top, we don't really need to worry about, such as how many computing resources we are requesting, how much computer time we are asking for, etc.
+  # We will define some or all of our optimization algorithm within this script; since we will be iteratively running simulations, we will need to define any scheme that will be running simulations here
+  # We can create a separate Python script for processing; I will write out a possible plan in the google doc  
