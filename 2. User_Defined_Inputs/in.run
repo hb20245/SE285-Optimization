@@ -1,60 +1,77 @@
-#INITIALIZATION; NO CHANGES EXCEPT TEMP#
+# ---------------------- INIT ----------------------
+units           real
+dimension       3
+boundary        p p p
+atom_style      charge
+timestep        0.10                     # fs; keep fixed across runs
 
-variable temp equal 2000.0
+# ---- User knobs (keep dt & Tdamp fixed; optimize R_heat via nsteps) ----
+variable        Tstart     equal 300.0   # K
+variable        Tend       equal 1500.0  # K
+variable        Tdamp_fs   equal 100.0   # fs (keep fixed across runs)
+variable        Pdamp_fs   equal 8000.0  # fs (~8 ps; smoother NPT; 1000 fs also OK)
+variable        Rate_Kps   equal 10.0    # <-- target heating rate (K/ps). CHANGE per run.
 
-units             real
-dimension         3
-boundary          p p p
-atom_style        charge
+# Derived: total ramp dT and required ramp steps for chosen rate
+variable        dT         equal ${Tend}-${Tstart}
+variable        dt_ps      equal ${timestep}/1000.0       # ps
+variable        ramp_ps    equal ${dT}/${Rate_Kps}        # ps total ramp time
+variable        ramp_steps equal ceil(${ramp_ps}/${dt_ps})# integer steps for ramp
 
-pair_style        reaxff lmp_control
+print "Heating rate target = ${Rate_Kps} K/ps"
+print "Ramp dT = ${dT} K; dt = ${timestep} fs; ramp steps = ${ramp_steps}"
 
-#SYSTEM DEFINITIONS; NO CHANGES#
+# ---------------------- FORCE FIELD ----------------------
+pair_style      reaxff lmp_control
+pair_coeff      * * ffield.reax.cho H C O
+fix             1 all qeq/reax 1 0.0 10.0 1.0e-6 param.qeq
 
-read_data         data.CHO
-replicate         3 3 3
-displace_atoms 	all random 0.5 0.5 0.5 12345
+# ---------------------- SYSTEM ----------------------
+read_data       data.CHO
+replicate       3 3 3         # remove if you want a smaller system
+displace_atoms  all random 0.5 0.5 0.5 12345
 
-#SIMULATION SETTINGS NO CHANGE#
+group           hydrogen type 1
+group           carbon   type 2
+group           oxygen   type 3
 
-pair_coeff        * * ffield.reax.cho H C O
-fix               1 all qeq/reax 1 0.0 10.0 1.0e-3 param.qeq 
-group 		hydrogen	type 1
-group 		carbon		type 2
-group 		oxygen		type 3
+# Basic thermo
+variable        eatom equal etotal/atoms
+compute         charge all property/atom q
+compute         qsum   all reduce sum c_charge
+compute         q1avg  hydrogen reduce ave c_charge
+compute         q2avg  carbon   reduce ave c_charge
+compute         q3avg  oxygen   reduce ave c_charge
 
-compute           charge all property/atom q #Per-atom vector of charges for all atoms
-compute           qsum all reduce sum c_charge    #Total system charge 
+thermo_style    custom step temp pe etotal v_eatom press vol c_q1avg c_q2avg c_q3avg c_qsum
+thermo          100
+neighbor        2.0 bin
+neigh_modify    delay 0 every 1 check yes
 
-compute		q1avg hydrogen reduce ave c_charge #Average charge of hydrogen atoms
-compute 	         q2avg carbon reduce ave c_charge #Avergae charge of carbon atoms
-compute		q3avg oxygen reduce ave c_charge #Avergae charge of oxygen atoms
+# ---------------------- MINIMIZE ----------------------
+min_style       fire
+minimize        1e-6 1e-8 10000 100000
 
-variable 	eatom equal etotal/atoms
+# ---------------------- EQ @ 300 K, 1 atm ----------------------
+velocity        all create ${Tstart} 4928459 mom yes rot yes dist gaussian
+fix             eq all npt temp ${Tstart} ${Tstart} ${Tdamp_fs} iso 1.0 1.0 ${Pdamp_fs}
+run             100000     # ~10 ps with dt=0.10 fs; extend to 200–500 ps later if needed
+unfix           eq
 
-thermo_style      custom step temp pe ke etotal v_eatom press vol c_q1avg c_q2avg c_q3avg c_qsum
-neighbor	         2.0 bin 
+# ---------------------- LINEAR RAMP (OPTIMIZATION TARGET) ----------------------
+fix             ramp all nvt temp ${Tstart} ${Tend} ${Tdamp_fs}
+run             ${ramp_steps}
+unfix           ramp
 
-min_style         sd
-minimize	         0 1e-2 20000 100000
+# ---------------------- OUTPUTS ----------------------
+dump            xyz all custom 1000 dump.xyz id type x y z q
+dump_modify     xyz element H C O
 
-min_style         fire
-minimize	         0 1e-4 20000 100000
+# ReaxFF bonds/species for sp2 post-processing
+fix             sp  all reaxff/species 100 species.out
+fix             bnd all reaxff/bonds   100 bonds.reax 0.3
 
-velocity	         all create ${temp} 4928459 loop geom rot yes
-
-fix               2 all nve #Conduct after minimizing to remove any initial high-energy configs
-
+print "DONE: Rate=${Rate_Kps} K/ps ; ramp_steps=${ramp_steps}"
 
 
-#RUN SIMULATION#
-# The ramp rate is affected (T_end − T_start) / (nsteps × dt)
-# We can fix dt, but adjust nsteps
-dump		1 all custom 1 dump.xyz id type x y z q
-dump_modify 	1 element H C O
 
-thermo            10 #Every 10 timesteops, the software will print out thermodynamic data; we will see this in our logfile
-         
-timestep          0.10 #femtoseconds
-         
-run               1000
