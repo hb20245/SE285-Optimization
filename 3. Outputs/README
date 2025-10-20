@@ -1,4 +1,4 @@
-# This directory contains all the outputs we will obtain from our simulation; our primary focus will be on the bonds.reax and species.out files
+# This directory contains all the outputs we will obtain from our simulation; our primary focus will be on the bonds.reax for now
 
 ## bonds.REAX file ##
 The meaning of the column header abbreviations is as follows:
@@ -7,7 +7,7 @@ id = atom id; numerical identifier for each atom
 
 type = atom type; hydrogen type 1; carbon   type 2; oxygen   type 3
 
-nb = number of bonds
+nb = number of bonds *We can place one of our constraints as nb = 3; charectaristic of sp2
 
 id_1 = atom id of first bond
 
@@ -25,9 +25,10 @@ nlp = number of lone pairs
 
 q = atomic charge
 
-#Example line indicating sp2
+## Example line indicating sp2
 2051 2 3 2047 2053 2054 0 1.029 0.958 1.575 3.563 0.000 -0.001 
-*2051 is a carbon atom (type2) bonded to 3 other atoms where bond orders = [1.03, 0.96, 1.58] (sp2 carbon has 2 single bonds and one double bond; we have one slightly stronger bond in this ensemble possibly indicating sp2)
+*2051 is a carbon atom (type2) bonded to 3 other atoms where bond orders = [1.03, 0.96, 1.58] (sp2 carbon has 2 single bonds and one double bond; we have one slightly stronger bond in this ensemble, possibly indicating sp2)
+*Overall bond order is 3.563 which is another indicator we are likely looking at sp2; 
 
 
 
