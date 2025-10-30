@@ -1,5 +1,9 @@
 # This directory contains all the outputs we will obtain from our simulation; our primary focus will be on the bonds.reax for now
 
+
+## dump.xyz file ##
+This file contains the atom trajectories at each timestep so that we may be able to visualize it in a software such as ovito
+We will likely not use this file much but its nice to know!
 ## bonds.REAX file ##
 The meaning of the column header abbreviations is as follows:
 
