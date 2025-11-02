@@ -1,0 +1,46 @@
+units           real
+dimension       3
+boundary        p p p
+atom_style      charge
+
+variable        dt             equal 0.10
+variable        Tstart         equal 294.0
+variable        Tend           equal 2300.0
+variable        Tdamp          equal 100.0
+
+# HEATING RATE - CHANGE THIS LINE FOR DIFFERENT RATES
+variable        Rate           equal 1.0
+
+timestep        ${dt}
+
+variable        dT             equal ${Tend}-${Tstart}
+variable        heat_time_ps   equal ${dT}/${Rate}
+variable        heat_time_fs   equal ${heat_time_ps}*1000.0
+variable        heat_steps     equal floor(${heat_time_fs}/${dt})
+
+print "=== HEATING PHASE ==="
+print "Rate = ${Rate} K/ps"
+print "Duration = ${heat_time_ps} ps = ${heat_steps} steps"
+
+read_restart    01_equilibrated.restart
+
+pair_style      reaxff lmp_control
+pair_coeff      * * ffield.reax.cho H C O
+fix             qeq all qeq/reax 1 0.0 10.0 1.0e-4 param.qeq
+
+thermo_style    custom step temp pe ke etotal press vol
+thermo          1000
+
+neighbor        2.0 bin
+neigh_modify    delay 0 every 1 check yes
+
+restart         50000 restart_heat.a restart_heat.b
+
+print "=== STARTING HEATING ==="
+fix             heat all langevin ${Tstart} ${Tend} ${Tdamp} 12345
+run             ${heat_steps}
+unfix           heat
+
+print "=== HEATING COMPLETE ==="
+write_data      heated.data
+write_restart   02_heated.restart

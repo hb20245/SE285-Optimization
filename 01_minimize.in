@@ -1,0 +1,54 @@
+units           real
+dimension       3
+boundary        p p p
+atom_style      charge
+
+variable        dt             equal 0.25
+variable        Tstart         equal 294.0
+variable        Tdamp          equal 100.0
+variable        Pdamp          equal 1000.0
+
+timestep        ${dt}
+
+read_data       data.CHO
+replicate	2 2 1
+group           hydrogen type 1
+group           carbon   type 2
+group           oxygen   type 3
+
+pair_style      reaxff lmp_control
+pair_coeff      * * ffield.reax.cho H C O
+fix             qeq all qeq/reax 1 0.0 10.0 1.0e-4 param.qeq
+
+compute         charge all property/atom q
+compute         qsum   all reduce sum c_charge
+compute         q1avg  hydrogen reduce ave c_charge
+compute         q2avg  carbon   reduce ave c_charge
+compute         q3avg  oxygen   reduce ave c_charge
+
+thermo_style    custom step temp pe ke etotal press vol c_q1avg c_q2avg c_q3avg
+thermo          100
+
+neighbor        2.0 bin
+neigh_modify    delay 0 every 1 check yes
+
+print "=== STARTING MINIMIZATION ==="
+min_style       cg
+minimize        1e-4 1e-6 1000 10000
+print "=== MINIMIZATION COMPLETE ==="
+
+write_data      minimized.data
+write_restart   01_minimized.restart
+
+print "=== STARTING NPT EQUILIBRATION at ${Tstart} K ==="
+velocity        all create ${Tstart} 4928459 mom yes rot yes dist gaussian
+
+fix             npt all npt temp ${Tstart} ${Tstart} ${Tdamp} iso 1.0 1.0 ${Pdamp}
+run             20000
+unfix           npt
+
+print "=== NPT EQUILIBRATION COMPLETE ==="
+write_data      equilibrated.data
+write_restart   01_equilibrated.restart
+
+print "=== PHASE 1 COMPLETE ==="

@@ -1,0 +1,56 @@
+units           real
+dimension       3
+boundary        p p p
+atom_style      charge
+
+variable        dt             equal 0.25
+variable        Tend           equal 2300.0
+variable        Tcool          equal 1000.0
+variable        Tdamp          equal 100.0
+variable        cool_time_ps   equal 1000.0
+variable        dump_every_ps  equal 2.0
+
+timestep        ${dt}
+
+variable        cool_time_fs   equal ${cool_time_ps}*1000.0
+variable        cool_steps     equal floor(${cool_time_fs}/${dt})
+variable        dump_every_fs  equal ${dump_every_ps}*1000.0
+variable        dump_stride    equal floor(${dump_every_fs}/${dt})
+
+print "=== COOLING PHASE ==="
+print "Cooling from ${Tend} K to ${Tcool} K"
+print "Duration = ${cool_time_ps} ps (${cool_steps} steps)"
+print "Output every ${dump_every_ps} ps (${dump_stride} steps)"
+
+read_restart    03_held.restart
+
+pair_style      reaxff lmp_control
+pair_coeff      * * ffield.reax.cho H C O
+fix             qeq all qeq/reax 1 0.0 10.0 1.0e-4 param.qeq
+
+thermo_style    custom step temp pe ke etotal press vol
+thermo          1000
+
+neighbor        2.0 bin
+neigh_modify    delay 0 every 1 check yes
+
+restart         50000 restart_cool.a restart_cool.b
+
+dump            traj all custom ${dump_stride} dump_cool.xyz id type x y z q
+dump_modify     traj element H C O sort id
+
+fix             bonds all reaxff/bonds ${dump_stride} bonds_cool.reax
+
+print "=== STARTING COOLING ==="
+fix             cool all nvt temp ${Tend} ${Tcool} ${Tdamp}
+run             ${cool_steps}
+unfix           cool
+
+undump          traj
+unfix           bonds
+
+print "=== COOLING COMPLETE ==="
+write_data      final.data
+write_restart   04_final.restart
+
+print "=== ALL PHASES COMPLETE ==="
